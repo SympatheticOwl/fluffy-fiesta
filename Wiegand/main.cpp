@@ -4,6 +4,26 @@
 #include "state.h"
 #include "stepper_control.h"
 #include "rfid_control.h"
+#include "web_server.h"
+
+// WiFi configuration
+const char* webServerSSID = "NetWatch";       // Using the same SSID from your code
+const char* webServerPassword = "Jcd26044";   // Using the same password from your code
+
+// Create the web server instance
+TaskSchedulerWebServer taskServer(webServerSSID, webServerPassword);
+
+// Add this function before setup()
+void setupWebServer() {
+  // Initialize the web server
+  if (taskServer.begin()) {
+    debugPrint("Task Scheduler Web Server started!");
+    Serial.print("Access the scheduler at http://");
+    Serial.println(taskServer.getIP());
+  } else {
+    debugPrint("Failed to start Task Scheduler Web Server");
+  }
+}
 
 void setup() {
   // Use Serial1 for debug output since pins 0 and 1 are used for RFID
@@ -13,11 +33,12 @@ void setup() {
   #define Serial Serial1
 
   // Configure pins
-  pinMode(LED_PIN, OUTPUT);            // Set LED pin as output
   pinMode(DATA0_PIN, INPUT_PULLUP);    // Add pull-up to help with noise
   pinMode(DATA1_PIN, INPUT_PULLUP);    // Add pull-up to help with noise
-  pinMode(STEPPER_BUTTON_PIN, INPUT_PULLUP);  // Button with pull-up
+  pinMode(SERVO_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);            // Set LED pin as output
   pinMode(LED_BUTTON_PIN, INPUT_PULLUP);      // Button with pull-up
+  pinMode(STEPPER_BUTTON_PIN, INPUT_PULLUP);  // Button with pull-up
 
   // Turn off LED initially
   digitalWrite(LED_PIN, LOW);
@@ -95,13 +116,20 @@ void setup() {
     Serial.print("Current time: ");
     Serial.println(getTimeString());
 
+    setupWebServer();
+
     // Disconnect WiFi to save power (we only needed it for time sync)
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-    debugPrint("WiFi disconnected - time synchronized");
+    // WiFi.disconnect(true);
+    // WiFi.mode(WIFI_OFF);
+    // debugPrint("WiFi disconnected - time synchronized");
   } else {
     debugPrint("WiFi connection failed! Time functions will not work correctly.");
   }
+
+  // Initialize the web server (uses the same WiFi credentials or creates an AP if needed)
+  taskServer.begin();
+
+  debugPrint("Setup complete");
 
   // Initialize time check
   lastTimeCheck = millis();
@@ -175,6 +203,11 @@ void setup() {
 void loop() {
   // Get current time for various timers
   currentTime = millis();
+
+  // Handle web server clients
+  if (taskServer.isRunning()) {
+    taskServer.handleClient();
+  }
 
   // Check button state periodically
   checkStepperButton();

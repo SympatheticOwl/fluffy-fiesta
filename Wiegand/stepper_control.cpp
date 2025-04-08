@@ -36,13 +36,13 @@ const unsigned long BUTTON_CHECK_INTERVAL = 50; // Check button every 50ms
 
 ScheduledTask scheduledTasks[MAX_SCHEDULED_TASKS] = {
   // Format: {minute, hour, dayOfMonth, month, dayOfWeek, lastRun, name}
-  {-1, -1, -1, -1, -1, false, "Every Minute"},  // Run every minute of every day
-  
+  // {-1, -1, -1, -1, -1, false, "Every Minute"},  // Run every minute of every day
+
   // Commented out other schedules - uncomment if needed
-  //{0, 7, -1, -1, -1, false, "Morning Feeding"},  // Every day at 7:00 AM
-  //{0, 19, -1, -1, -1, false, "Evening Feeding"}, // Every day at 7:00 PM
+  {0, 7, -1, -1, -1, false, "Morning Feeding"},  // Every day at 7:00 AM
+  {0, 19, -1, -1, -1, false, "Evening Feeding"}, // Every day at 7:00 PM
   //{30, 12, -1, -1, -1, false, "Noon Feeding"},   // Every day at 12:30 PM
-  
+
   // End with an empty task to mark the end of the array
   {-1, -1, -1, -1, -1, false, NULL}
 };
@@ -50,50 +50,50 @@ ScheduledTask scheduledTasks[MAX_SCHEDULED_TASKS] = {
 void checkScheduledTasks() {
   int currentMinute, currentHour, currentDayOfMonth, currentMonth, currentDayOfWeek;
   getCurrentTime(currentMinute, currentHour, currentDayOfMonth, currentMonth, currentDayOfWeek);
-  
+
   // Debug current time
   char timeStr[100];
-  sprintf(timeStr, "Current time: %02d:%02d, Date: %02d/%02d, Day: %d", 
+  sprintf(timeStr, "Current time: %02d:%02d, Date: %02d/%02d, Day: %d",
           currentHour, currentMinute, currentMonth, currentDayOfMonth, currentDayOfWeek);
   debugPrint(timeStr);
-  
+
   // Store current minute for detecting minute changes
   static int lastMinute = -1;
-  
+
   // Check if the minute has changed
   if (lastMinute != currentMinute) {
     debugPrint("Minute changed - resetting task run flags");
-    
+
     // Reset all lastRun flags when the minute changes
     for (int i = 0; i < MAX_SCHEDULED_TASKS; i++) {
       if (scheduledTasks[i].name == NULL) break;
       scheduledTasks[i].lastRun = false;
     }
-    
+
     // Update lastMinute
     lastMinute = currentMinute;
   }
-  
+
   // Check if any scheduled task should run now
   for (int i = 0; i < MAX_SCHEDULED_TASKS; i++) {
     // Stop when we reach the end of defined tasks
     if (scheduledTasks[i].name == NULL) break;
-    
+
     // Check if this task should run at the current time
-    if (shouldRunTask(&scheduledTasks[i], currentMinute, currentHour, 
+    if (shouldRunTask(&scheduledTasks[i], currentMinute, currentHour,
                       currentDayOfMonth, currentMonth, currentDayOfWeek)) {
-      
+
       // Only run the task if it hasn't run in this minute yet
       if (!scheduledTasks[i].lastRun) {
         // Mark the task as run
         scheduledTasks[i].lastRun = true;
-        
+
         // Log the task trigger
         char taskStr[100];
-        sprintf(taskStr, "Triggered task: %s at %02d:%02d", 
+        sprintf(taskStr, "Triggered task: %s at %02d:%02d",
                 scheduledTasks[i].name, currentHour, currentMinute);
         debugPrint(taskStr);
-        
+
         // Schedule the stepper motor rotation
         scheduleStepperRotation(scheduledTasks[i].name);
         stepperScheduled = true;
@@ -135,7 +135,7 @@ void getCurrentTime(int &minute, int &hour, int &dayOfMonth, int &month, int &da
 void scheduleStepperRotation(const char* taskName) {
   String timeStr = getTimeString();
   char message[150];
-  sprintf(message, "Scheduling stepper motor rotation for task: %s at %s", 
+  sprintf(message, "Scheduling stepper motor rotation for task: %s at %s",
           taskName, timeStr.c_str());
   debugPrint(message);
 }
@@ -164,29 +164,29 @@ void disableStepperMotor() {
 void checkStepperButton() {
   // Read the current button state
   int reading = digitalRead(STEPPER_BUTTON_PIN);
-  
+
   // Check if the button state has changed
   if (reading != lastStepperButtonState) {
     // Reset the debounce timer
     lastDebounceTime = millis();
   }
-  
+
   // Check if debounce delay has passed since the last button state change
   if ((millis() - lastDebounceTime) > debounceDelay) {
     // If the button state has changed
     if (reading != stepperButtonPressed) {
       stepperButtonPressed = reading;
-      
+
       // Button is pressed (LOW when using INPUT_PULLUP)
       if (stepperButtonPressed == LOW) {
         debugPrint("Button pressed - starting continuous stepper rotation");
         enableStepperMotor();
         buttonControlActive = true;
-        
+
         // Set the stepper to run continuously
         stepper.setSpeed(200);  // Speed in steps per second
         stepper.moveTo(10000);  // Large number to keep it moving for a while
-      } 
+      }
       // Button is released
       else {
         debugPrint("Button released - stopping stepper rotation");
@@ -196,7 +196,7 @@ void checkStepperButton() {
       }
     }
   }
-  
+
   // Save the current button state for next comparison
   lastStepperButtonState = reading;
 }
