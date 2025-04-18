@@ -36,11 +36,11 @@ const unsigned long BUTTON_CHECK_INTERVAL = 50; // Check button every 50ms
 
 ScheduledTask scheduledTasks[MAX_SCHEDULED_TASKS] = {
   // Format: {minute, hour, dayOfMonth, month, dayOfWeek, lastRun, name}
-  {-1, -1, -1, -1, -1, false, "Every Minute"},  // Run every minute of every day
-  
+  // {-1, -1, -1, -1, -1, false, "Every Minute"},  // Run every minute of every day
+
   // Commented out other schedules - uncomment if needed
-  //{0, 7, -1, -1, -1, false, "Morning Feeding"},  // Every day at 7:00 AM
-  //{0, 19, -1, -1, -1, false, "Evening Feeding"}, // Every day at 7:00 PM
+  {0, 7, -1, -1, -1, false, "Morning Feeding"},  // Every day at 7:00 AM
+  {0, 19, -1, -1, -1, false, "Evening Feeding"}, // Every day at 7:00 PM
   //{30, 12, -1, -1, -1, false, "Noon Feeding"},   // Every day at 12:30 PM
   
   // End with an empty task to mark the end of the array
