@@ -9,40 +9,88 @@ TaskSchedulerWebServer::~TaskSchedulerWebServer() {
     if (serverStarted) {
         server.stop();
     }
+    // Close the preferences namespace
+    preferences.end();
+}
+
+// Save tasks to persistent storage
+bool TaskSchedulerWebServer::saveTasks() {
+    String tasksJson = tasksToJson();
+
+    // Clear previous data
+    preferences.remove("tasks");
+
+    // Save the JSON string to preferences
+    return preferences.putString("tasks", tasksJson);
+}
+
+// Load tasks from persistent storage
+bool TaskSchedulerWebServer::loadTasks() {
+    // Check if tasks exist in preferences
+    if (!preferences.isKey("tasks")) {
+        Serial.println("No saved tasks found in persistent storage");
+        return false;
+    }
+
+    // Get the JSON string
+    String tasksJson = preferences.getString("tasks", "[]");
+    Serial.println("Loaded tasks from persistent storage:");
+    Serial.println(tasksJson);
+
+    // Parse JSON
+    DynamicJsonDocument doc(2048); // Adjust size based on expected payload
+    DeserializationError error = deserializeJson(doc, tasksJson);
+
+    if (error) {
+        Serial.print("Failed to parse JSON from persistent storage: ");
+        Serial.println(error.c_str());
+        return false;
+    }
+
+    // Process the JSON data
+    JsonArray tasksArray = doc.as<JsonArray>();
+
+    return updateScheduledTasks(tasksArray);
 }
 
 bool TaskSchedulerWebServer::begin() {
     // Connect to WiFi
     WiFi.begin(ssid, password);
-    
+
     // Wait for connection, with timeout
     unsigned long startTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startTime < 20000) {
         delay(500);
         Serial.print(".");
     }
-    
+
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("\nFailed to connect to WiFi");
         return false;
     }
-    
+
     localIP = WiFi.localIP();
     Serial.println("");
     Serial.print("Connected to WiFi with IP address: ");
     Serial.println(localIP);
-    
+
+    // Initialize preferences for persistent storage
+    preferences.begin("taskSched", false); // "taskSched" is the namespace
+
+    // Load saved tasks from persistent storage
+    loadTasks();
+
     // Set up the server routes
     server.on("/", HTTP_GET, [this](){ this->handleRoot(); });
     server.on("/get-tasks", HTTP_GET, [this](){ this->handleGetTasks(); });
     server.on("/save-tasks", HTTP_POST, [this](){ this->handleSaveTasks(); });
     server.onNotFound([this](){ this->handleNotFound(); });
-    
+
     // Start server
     server.begin();
     serverStarted = true;
     Serial.println("HTTP server started");
-    
+
     return true;
 }
 
@@ -74,25 +122,30 @@ void TaskSchedulerWebServer::handleSaveTasks() {
         server.send(400, "text/plain", "No data received");
         return;
     }
-    
+
     String jsonString = server.arg("plain");
-    
+
     // Parse JSON
     DynamicJsonDocument doc(2048); // Adjust size based on expected payload
     DeserializationError error = deserializeJson(doc, jsonString);
-    
+
     if (error) {
         String errorMsg = "Failed to parse JSON: ";
         errorMsg += error.c_str();
         server.send(400, "text/plain", errorMsg);
         return;
     }
-    
+
     // Process the JSON data
     JsonArray tasksArray = doc.as<JsonArray>();
-    
+
     if (updateScheduledTasks(tasksArray)) {
-        server.send(200, "text/plain", "Tasks updated successfully");
+        // Save the tasks to persistent storage
+        if (saveTasks()) {
+            server.send(200, "text/plain", "Tasks updated and saved successfully");
+        } else {
+            server.send(200, "text/plain", "Tasks updated but failed to save to persistent storage");
+        }
     } else {
         server.send(500, "text/plain", "Failed to update tasks");
     }
