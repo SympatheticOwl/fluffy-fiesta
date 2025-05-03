@@ -1,16 +1,8 @@
 #include "web_server.h"
 #include "html_content.h" // Include the HTML content header file
 
-TaskSchedulerWebServer::TaskSchedulerWebServer(const char* wifi_ssid, const char* wifi_password, int port) 
+TaskSchedulerWebServer::TaskSchedulerWebServer(const char* wifi_ssid, const char* wifi_password, int port)
     : server(port), ssid(wifi_ssid), password(wifi_password), serverStarted(false) {
-}
-
-TaskSchedulerWebServer::~TaskSchedulerWebServer() {
-    if (serverStarted) {
-        server.stop();
-    }
-    // Close the preferences namespace
-    preferences.end();
 }
 
 // Save tasks to persistent storage
@@ -51,6 +43,14 @@ bool TaskSchedulerWebServer::loadTasks() {
     JsonArray tasksArray = doc.as<JsonArray>();
 
     return updateScheduledTasks(tasksArray);
+}
+
+TaskSchedulerWebServer::~TaskSchedulerWebServer() {
+    if (serverStarted) {
+        server.stop();
+    }
+    // Close the preferences namespace
+    preferences.end();
 }
 
 bool TaskSchedulerWebServer::begin() {
@@ -161,7 +161,7 @@ bool TaskSchedulerWebServer::updateScheduledTasks(const JsonArray& tasksArray) {
         Serial.println("Too many tasks!");
         return false;
     }
-    
+
     // Reset all tasks
     for (int i = 0; i < MAX_SCHEDULED_TASKS; i++) {
         scheduledTasks[i].minute = -1;
@@ -172,12 +172,12 @@ bool TaskSchedulerWebServer::updateScheduledTasks(const JsonArray& tasksArray) {
         scheduledTasks[i].lastRun = false;
         scheduledTasks[i].name = NULL;
     }
-    
+
     // Update tasks from the received JSON
     int i = 0;
     for (JsonVariant taskVar : tasksArray) {
         JsonObject task = taskVar.as<JsonObject>();
-        
+
         // Create a new permanent storage for the name string
         // We need to do this because the task.name in your structure is a pointer that needs
         // to point to permanent storage, not temporary variables
@@ -186,10 +186,10 @@ bool TaskSchedulerWebServer::updateScheduledTasks(const JsonArray& tasksArray) {
             Serial.println("Memory allocation failed!");
             return false;
         }
-        
+
         // Copy the name from the JSON into the allocated memory
         strlcpy(taskName, task["name"].as<const char*>(), 50);
-        
+
         // Update the scheduledTasks array
         scheduledTasks[i].minute = task["minute"].as<int>();
         scheduledTasks[i].hour = task["hour"].as<int>();
@@ -198,28 +198,28 @@ bool TaskSchedulerWebServer::updateScheduledTasks(const JsonArray& tasksArray) {
         scheduledTasks[i].dayOfWeek = task["dayOfWeek"].as<int>();
         scheduledTasks[i].lastRun = false;
         scheduledTasks[i].name = taskName;
-        
+
         i++;
     }
-    
+
     // Set the terminator
     scheduledTasks[i].name = NULL;
-    
+
     Serial.print("Updated ");
     Serial.print(i);
     Serial.println(" tasks");
-    
+
     return true;
 }
 
 String TaskSchedulerWebServer::tasksToJson() {
     DynamicJsonDocument doc(2048); // Adjust size based on expected payload
     JsonArray tasksArray = doc.to<JsonArray>();
-    
+
     // Convert scheduledTasks to JSON
     for (int i = 0; i < MAX_SCHEDULED_TASKS; i++) {
         if (scheduledTasks[i].name == NULL) break;
-        
+
         JsonObject task = tasksArray.createNestedObject();
         task["name"] = scheduledTasks[i].name;
         task["minute"] = scheduledTasks[i].minute;
@@ -228,7 +228,7 @@ String TaskSchedulerWebServer::tasksToJson() {
         task["month"] = scheduledTasks[i].month;
         task["dayOfWeek"] = scheduledTasks[i].dayOfWeek;
     }
-    
+
     String jsonString;
     serializeJson(doc, jsonString);
     return jsonString;

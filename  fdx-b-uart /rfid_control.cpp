@@ -190,7 +190,7 @@ boolean processRFIDData() {
         Serial.println(rfidBuffer);
 
         // Calculate time since last read
-        unsigned long currentTime = millis();
+        currentTime = millis();
         if (lastReadTime > 0) {
           Serial.print("Time since last read: ");
           Serial.print((currentTime - lastReadTime) / 1000.0);
@@ -246,25 +246,26 @@ void checkServoButton() {
       // Button is pressed (LOW when using INPUT_PULLUP)
       if (buttonState == LOW) {
         servoButtonPressed = true;
+        // Turn on LED
+        digitalWrite(LED_PIN, HIGH);
+
         // Open servo
         // myServo.write(SERVO_OPEN_POS);
         smoothServoMove(SERVO_OPEN_POS, 2500);
         delay(500);
 
-        // Turn on LED
-        digitalWrite(LED_PIN, HIGH);
         debugPrint("Button pressed - Servo opening, LED on");
       }
       // Button is released
       else {
         servoButtonPressed = false;
+        // Turn off LED
+        digitalWrite(LED_PIN, LOW);
         // Close servo
         // myServo.write(SERVO_CLOSED_POS);
         smoothServoMove(SERVO_CLOSED_POS, 2500);
         delay(500);
 
-        // Turn off LED
-        digitalWrite(LED_PIN, LOW);
         debugPrint("Button released - Servo closing, LED off");
       }
     }
