@@ -19,7 +19,7 @@ const long gmtOffset_sec = -21600;       // -6 hours for CST
 const int daylightOffset_sec = 3600;     // 3600 seconds = 1 hour DST offset
 
 // Stepper control variables
-const int STEPS_PER_REVOLUTION = 200;    // Standard for NEMA 17 (1.8° per step)
+const int STEPS_PER_REVOLUTION = 1200;    // Standard for NEMA 17 (1.8° per step)
 boolean stepperRotating = false;
 boolean stepperScheduled = false;
 boolean stepperButtonPressed = false;     // Track button state
@@ -144,8 +144,121 @@ void scheduleStepperRotation(const char* taskName) {
 void startStepperRotation() {
   String timeStr = getTimeString();
   debugPrint(("Starting stepper motor 360-degree rotation at " + timeStr).c_str());
-  enableStepperMotor(); // Enable motor before starting rotation
-  stepper.move(STEPS_PER_REVOLUTION);  // Move 200 steps (one full revolution)
+  // enableStepperMotor(); // Enable motor before starting rotation
+  performSafeModeRotation(STEPS_PER_REVOLUTION);  // Move 200 steps (one full revolution)
+}
+
+// Add this method to your stepper_control.cpp file
+void performSafeModeRotation(int totalSteps) {
+  debugPrint("Starting safe mode rotation to avoid jams");
+
+  // Enable the stepper motor
+  enableStepperMotor();
+
+  // Calculate steps for the forward and backward motion
+  // Original code: 200 * 16 steps forward, 200 * 4 steps backward
+  // This creates a net movement of 200 * 12 steps forward per cycle
+  const int FORWARD_STEPS = 200;
+  const int BACKWARD_STEPS = 50;
+  const int NET_STEPS_PER_CYCLE = FORWARD_STEPS - BACKWARD_STEPS;  // 2400 net steps
+
+  // Set the speed for the safe mode operation
+  // You can adjust this value to match your original delay timing
+  stepper.setMaxSpeed(500);     // Adjust based on your needs
+  stepper.setAcceleration(200); // Slower acceleration for safe mode
+
+  int currentSteps = 0;
+
+  while (currentSteps < totalSteps) {
+    // Move forward
+    debugPrint("Safe mode: Moving forward...");
+    stepper.move(-FORWARD_STEPS);
+
+    // Run the stepper until it completes the forward movement
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+
+    // Move backward
+    debugPrint("Safe mode: Moving backward...");
+    stepper.move(BACKWARD_STEPS);
+
+    // Run the stepper until it completes the backward movement
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+
+    // Update the current step count with the net movement
+    currentSteps += NET_STEPS_PER_CYCLE;
+
+    // Debug output
+    char message[100];
+    sprintf(message, "Safe mode progress: %d/%d steps", currentSteps, totalSteps);
+    debugPrint(message);
+  }
+
+  // If we've overshot the target, correct the position
+  if (currentSteps > totalSteps) {
+    int overshoot = currentSteps - totalSteps;
+    debugPrint("Correcting overshoot...");
+    stepper.move(-overshoot);
+
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+  }
+
+  // Disable the stepper motor when done
+  disableStepperMotor();
+  debugPrint("Safe mode rotation complete");
+}
+
+// Alternative version that more closely matches your original timing
+void performSafeModeRotationWithDelay(int totalSteps, unsigned long delayMicros) {
+  debugPrint("Starting safe mode rotation with custom delay");
+
+  // Enable the stepper motor
+  enableStepperMotor();
+
+  const int FORWARD_STEPS = 200 * 16;  // 3200 steps forward
+  const int BACKWARD_STEPS = 200 * 4;  // 800 steps backward
+  const int NET_STEPS_PER_CYCLE = FORWARD_STEPS - BACKWARD_STEPS;  // 2400 net steps
+
+  // Calculate speed based on your delay
+  // Speed in steps per second = 1,000,000 / (2 * delayMicros)
+  float stepsPerSecond = 1000000.0 / (2.0 * delayMicros);
+  stepper.setMaxSpeed(stepsPerSecond);
+  stepper.setAcceleration(stepsPerSecond / 2);  // Gentle acceleration
+
+  int currentSteps = 0;
+
+  while (currentSteps < totalSteps) {
+    // Move forward
+    stepper.move(FORWARD_STEPS);
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+
+    // Move backward
+    stepper.move(-BACKWARD_STEPS);
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+
+    currentSteps += NET_STEPS_PER_CYCLE;
+  }
+
+  // Correct overshoot if any
+  if (currentSteps > totalSteps) {
+    int overshoot = currentSteps - totalSteps;
+    stepper.move(-overshoot);
+    while (stepper.distanceToGo() != 0) {
+      stepper.run();
+    }
+  }
+
+  disableStepperMotor();
+  debugPrint("Safe mode rotation with delay complete");
 }
 
 void enableStepperMotor() {
@@ -184,8 +297,10 @@ void checkStepperButton() {
         buttonControlActive = true;
         
         // Set the stepper to run continuously
-        stepper.setSpeed(200);  // Speed in steps per second
-        stepper.moveTo(10000);  // Large number to keep it moving for a while
+        // stepper.setSpeed(200);  // Speed in steps per second
+        // stepper.moveTo(10000);  // Large number to keep it moving for a while
+        //TODO: performSafeModeRotationWithInterrupt
+        performSafeModeRotation(10000);
       } 
       // Button is released
       else {

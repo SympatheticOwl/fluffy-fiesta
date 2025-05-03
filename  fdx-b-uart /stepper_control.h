@@ -75,5 +75,7 @@ void startStepperRotation();
 void checkStepperButton();
 void enableStepperMotor();
 void disableStepperMotor();
+void performSafeModeRotation(int totalSteps);
+void performSafeModeRotationWithDelay(int totalSteps, unsigned long delayMicros);
 
 #endif //STEPPER_CONTROL_H
