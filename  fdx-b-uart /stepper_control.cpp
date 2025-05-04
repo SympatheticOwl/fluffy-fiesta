@@ -12,8 +12,8 @@ const unsigned long TIME_CHECK_INTERVAL = 10000; // Check time every 10 seconds
 AccelStepper stepper(AccelStepper::FULL4WIRE, STEPPER_PIN1, STEPPER_PIN4, STEPPER_PIN2, STEPPER_PIN3);
 
 // Time control variables
-const char* ssid = "NetWatch";       // Replace with your WiFi SSID
-const char* password = "Jcd26044";   // Replace with your WiFi password (you may want to change this)
+const char* ssid = "";       // Replace with your WiFi SSID
+const char* password = "";   // Replace with your WiFi password (you may want to change this)
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = -21600;       // -6 hours for CST
 const int daylightOffset_sec = 3600;     // 3600 seconds = 1 hour DST offset
@@ -145,11 +145,10 @@ void startStepperRotation() {
   String timeStr = getTimeString();
   debugPrint(("Starting stepper motor 360-degree rotation at " + timeStr).c_str());
   // enableStepperMotor(); // Enable motor before starting rotation
-  performSafeModeRotation(STEPS_PER_REVOLUTION);  // Move 200 steps (one full revolution)
+  performSafeModeRotation(STEPS_PER_REVOLUTION, false);  // Move 200 steps (one full revolution)
 }
 
-// Add this method to your stepper_control.cpp file
-void performSafeModeRotation(int totalSteps) {
+void performSafeModeRotation(int totalSteps, boolean allowInterrupt) {
   debugPrint("Starting safe mode rotation to avoid jams");
 
   // Enable the stepper motor
@@ -169,9 +168,10 @@ void performSafeModeRotation(int totalSteps) {
 
   int currentSteps = 0;
 
-  while (currentSteps < totalSteps) {
-    // Move forward
+  while (currentSteps < totalSteps || (buttonControlActive && allowInterrupt)) {
     debugPrint("Safe mode: Moving forward...");
+    // The drill spiral rotates opposite of what traditional forward is so without
+    // reversing it food will get pulled inward
     stepper.move(-FORWARD_STEPS);
 
     // Run the stepper until it completes the forward movement
@@ -179,7 +179,6 @@ void performSafeModeRotation(int totalSteps) {
       stepper.run();
     }
 
-    // Move backward
     debugPrint("Safe mode: Moving backward...");
     stepper.move(BACKWARD_STEPS);
 
@@ -293,14 +292,13 @@ void checkStepperButton() {
       // Button is pressed (LOW when using INPUT_PULLUP)
       if (stepperButtonPressed == LOW) {
         debugPrint("Button pressed - starting continuous stepper rotation");
-        enableStepperMotor();
         buttonControlActive = true;
         
         // Set the stepper to run continuously
         // stepper.setSpeed(200);  // Speed in steps per second
         // stepper.moveTo(10000);  // Large number to keep it moving for a while
         //TODO: performSafeModeRotationWithInterrupt
-        performSafeModeRotation(10000);
+        performSafeModeRotation(10000, true);
       } 
       // Button is released
       else {

@@ -7,8 +7,8 @@
 #include "web_server.h"
 
 // WiFi configuration
-const char* webServerSSID = "NetWatch";       // Using the same SSID from your code
-const char* webServerPassword = "Jcd26044";   // Using the same password from your code
+const char* webServerSSID = "";       // Using the same SSID from your code
+const char* webServerPassword = "";   // Using the same password from your code
 
 // Create the web server instance
 TaskSchedulerWebServer taskServer(webServerSSID, webServerPassword);
@@ -160,26 +160,6 @@ void loop() {
   // Process any incoming RFID data
   processRFIDData();
 
-  // // Check for activity timeout
-  // if (anyInterruptTriggered && (currentTime - lastInterruptTime > 5000)) {
-  //   debugPrint("RFID activity stopped - resetting");
-  //   resetRFIDBuffer();
-  //   anyInterruptTriggered = false;
-  // }
-  //
-  // // Update tag present status based on recent activity
-  // if (tagPresent && (currentTime - tagLastSeen > TAG_TIMEOUT) && !servoButtonPressed) {
-  //   // Only close the servo if the button isn't being pressed
-  //   tagPresent = false;
-  //   myServo.write(SERVO_CLOSED_POS);
-  //   debugPrint("Tag removed - Servo closing");
-  //
-  //   // Turn off LED
-  //   if (!servoButtonPressed) {
-  //     digitalWrite(LED_PIN, LOW);
-  //   }
-  // }
-
   // Handle stepper motor rotation
   if (buttonControlActive) {
     // If button is controlling the stepper, keep it running
@@ -208,5 +188,5 @@ void loop() {
   }
 
   // Give a little time for other processes
-  delay(1);
+  delay(1000);
 }

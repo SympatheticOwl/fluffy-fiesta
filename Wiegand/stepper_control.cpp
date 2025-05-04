@@ -12,8 +12,8 @@ const unsigned long TIME_CHECK_INTERVAL = 10000; // Check time every 10 seconds
 AccelStepper stepper(AccelStepper::FULL4WIRE, STEPPER_PIN1, STEPPER_PIN4, STEPPER_PIN2, STEPPER_PIN3);
 
 // Time control variables
-const char* ssid = "NetWatch";       // Replace with your WiFi SSID
-const char* password = "Jcd26044";   // Replace with your WiFi password (you may want to change this)
+const char* ssid = "";       // Replace with your WiFi SSID
+const char* password = "";   // Replace with your WiFi password (you may want to change this)
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = -21600;       // -6 hours for CST
 const int daylightOffset_sec = 3600;     // 3600 seconds = 1 hour DST offset

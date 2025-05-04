@@ -7,8 +7,8 @@
 #include "web_server.h"
 
 // WiFi configuration
-const char* webServerSSID = "NetWatch";       // Using the same SSID from your code
-const char* webServerPassword = "Jcd26044";   // Using the same password from your code
+const char* webServerSSID = "";       // Using the same SSID from your code
+const char* webServerPassword = "";   // Using the same password from your code
 
 // Create the web server instance
 TaskSchedulerWebServer taskServer(webServerSSID, webServerPassword);

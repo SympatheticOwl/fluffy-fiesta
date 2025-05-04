@@ -23,28 +23,11 @@ const unsigned long buttonDebounceDelay = 50;  // 50ms debounce
 Servo myServo;
 boolean tagPresent = false;
 unsigned long tagLastSeen = 0;
-const int TAG_TIMEOUT = 2000;      // Time in ms to wait before considering tag removed
-const int SERVO_OPEN_POS = 180;    // Position for servo when tag detected (0-180)
-const int SERVO_CLOSED_POS = 0;    // Position for servo when no tag detected (0-180)
+const int TAG_TIMEOUT = 5000;      // Time in ms to wait before considering tag removed
+const int SERVO_OPEN_POS = 0;    // Position for servo when tag detected (0-180)
+const int SERVO_CLOSED_POS = 70;    // Position for servo when no tag detected (0-180)
 
 int currentPosition = SERVO_CLOSED_POS;
-
-// void moveServoWithSpeed(int startPos, int endPos, int speedDelay) {
-//   // If moving clockwise
-//   if (startPos < endPos) {
-//     for (int pos = startPos; pos <= endPos; pos++) {
-//       myServo.write(pos);
-//       delay(speedDelay);  // Controls the speed - larger value = slower movement
-//     }
-//   }
-//   // If moving counter-clockwise
-//   else {
-//     for (int pos = startPos; pos >= endPos; pos--) {
-//       myServo.write(pos);
-//       delay(speedDelay);  // Controls the speed - larger value = slower movement
-//     }
-//   }
-// }
 
 void smoothServoMove(int targetPosition, int fullRangeTime) {
   // fullRangeTime is the time in ms it would take to move through the entire 0-180 range
@@ -54,7 +37,7 @@ void smoothServoMove(int targetPosition, int fullRangeTime) {
   int direction = (targetPosition > currentPosition) ? 1 : -1;
 
   // Calculate proportional movement time based on distance relative to full range
-  float proportionOfFullRange = distance / 180.0;
+  float proportionOfFullRange = distance / 70.0;
   int moveTime = proportionOfFullRange * fullRangeTime;
 
   // Ensure minimum movement time for very small movements
@@ -164,9 +147,9 @@ boolean processRFIDData() {
     char c = Serial2.read();
 
     // Record time of activity
-    lastInterruptTime = millis();
-    tagLastSeen = millis();
-    anyInterruptTriggered = true;
+    // lastInterruptTime = millis();
+    // tagLastSeen = millis();
+    // anyInterruptTriggered = true;
 
     // Add to buffer if not overflowing
     if (rfidBufferIndex < sizeof(rfidBuffer) - 1) {
@@ -191,11 +174,11 @@ boolean processRFIDData() {
 
         // Calculate time since last read
         currentTime = millis();
-        if (lastReadTime > 0) {
-          Serial.print("Time since last read: ");
-          Serial.print((currentTime - lastReadTime) / 1000.0);
-          Serial.println(" seconds");
-        }
+        // if (lastReadTime > 0) {
+        //   Serial.print("Time since last read: ");
+        //   Serial.print((currentTime - lastReadTime) / 1000.0);
+        //   Serial.println(" seconds");
+        // }
         lastReadTime = currentTime;
 
         // Visual feedback - turn on LED
@@ -204,7 +187,7 @@ boolean processRFIDData() {
 
           // Update tag presence status and operate servo
           tagPresent = true;
-          tagLastSeen = currentTime;
+          // tagLastSeen = currentTime;
           // myServo.write(SERVO_OPEN_POS);
           smoothServoMove(SERVO_OPEN_POS, 2500);
           delay(1000);
@@ -216,6 +199,30 @@ boolean processRFIDData() {
       // Reset buffer for next read
       resetRFIDBuffer();
     }
+  }
+
+  // Check for activity timeout
+  // if (anyInterruptTriggered && (currentTime - lastInterruptTime > 5000)) {
+  //   debugPrint("RFID activity stopped - resetting");
+  //   resetRFIDBuffer();
+  //   anyInterruptTriggered = false;
+  // }
+
+  if (tagPresent && (currentTime - lastReadTime > TAG_TIMEOUT) && !servoButtonPressed) {
+    // Only close the servo if the button isn't being pressed
+    tagPresent = false;
+    smoothServoMove(SERVO_CLOSED_POS, 2500);
+    debugPrint("Tag removed - Servo closing");
+    // Update tag present status based on recent activity
+    Serial.print("Time since last read: ");
+    Serial.print((currentTime - lastReadTime) / 1000.0);
+    Serial.println(" seconds");
+
+    digitalWrite(LED_PIN, LOW);
+
+    // // Turn off LED
+    // if (!servoButtonPressed) {
+    // }
   }
 
   return newTagRead;
