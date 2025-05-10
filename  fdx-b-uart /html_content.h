@@ -7,7 +7,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Task Scheduler</title>
+    <title>Arduino Nano ESP32 Task Scheduler</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,7 +107,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <div class="card">
-        <h1>ESP32 Task Scheduler</h1>
+        <h1>Arduino Nano ESP32 Task Scheduler</h1>
         <div id="status" class="status"></div>
         
         <div class="card">

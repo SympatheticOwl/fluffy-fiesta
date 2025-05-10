@@ -11,9 +11,6 @@ const unsigned long TIME_CHECK_INTERVAL = 10000; // Check time every 10 seconds
 // Define a stepper motor controlled by 4 digital pins (4-wire stepper)
 AccelStepper stepper(AccelStepper::FULL4WIRE, STEPPER_PIN1, STEPPER_PIN4, STEPPER_PIN2, STEPPER_PIN3);
 
-// Time control variables
-const char *ssid = ""; // Replace with your WiFi SSID
-const char *password = ""; // Replace with your WiFi password (you may want to change this)
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = -21600; // -6 hours for CST
 const int daylightOffset_sec = 3600; // 3600 seconds = 1 hour DST offset
@@ -103,7 +100,7 @@ void checkScheduledTasks() {
 
 // Function to get formatted time string
 String getTimeString() {
-    struct tm timeinfo;
+    tm timeinfo;
     if (!getLocalTime(&timeinfo)) {
         return "Failed to obtain time";
     }
@@ -114,7 +111,7 @@ String getTimeString() {
 
 // Function to get current time components
 void getCurrentTime(int &minute, int &hour, int &dayOfMonth, int &month, int &dayOfWeek) {
-    struct tm timeinfo;
+    tm timeinfo;
     if (!getLocalTime(&timeinfo)) {
         minute = 0;
         hour = 0;
@@ -130,7 +127,6 @@ void getCurrentTime(int &minute, int &hour, int &dayOfMonth, int &month, int &da
     dayOfWeek = timeinfo.tm_wday; // tm_wday is 0-6 (0 = Sunday)
 }
 
-// Schedule a 360-degree rotation of the stepper motor
 void scheduleStepperRotation(const char *taskName) {
     String timeStr = getTimeString();
     char message[150];
@@ -139,18 +135,14 @@ void scheduleStepperRotation(const char *taskName) {
     debugPrint(message);
 }
 
-// Start the actual rotation
 void startStepperRotation() {
     String timeStr = getTimeString();
-    debugPrint(("Starting stepper motor 360-degree rotation at " + timeStr).c_str());
-    // enableStepperMotor(); // Enable motor before starting rotation
+    debugPrint(("Starting stepper motor rotation at " + timeStr).c_str());
     performSafeModeRotation(STEPS_PER_REVOLUTION, false); // Move 200 steps (one full revolution)
 }
 
 void safeRotate(int &currentSteps, int totalSteps) {
     // Calculate steps for the forward and backward motion
-    // Original code: 200 * 16 steps forward, 200 * 4 steps backward
-    // This creates a net movement of 200 * 12 steps forward per cycle
     const int FORWARD_STEPS = 200;
     const int BACKWARD_STEPS = 50;
     const int NET_STEPS_PER_CYCLE = FORWARD_STEPS - BACKWARD_STEPS; // 2400 net steps
@@ -204,12 +196,11 @@ void performSafeModeRotation(int totalSteps, boolean allowInterrupt) {
             safeRotate(currentSteps, totalSteps);
         }
     } else {
-        // rotate to totalSteps
         while (currentSteps < totalSteps) {
             safeRotate(currentSteps, totalSteps);
         }
 
-        // // If we've overshot the target, correct the position
+        // If we've overshot the target, correct the position
         // if (currentSteps > totalSteps) {
         //     int overshoot = currentSteps - totalSteps;
         //     debugPrint("Correcting overshoot...");
@@ -223,57 +214,8 @@ void performSafeModeRotation(int totalSteps, boolean allowInterrupt) {
 
     stepperRotating = false;
 
-    // Disable the stepper motor when done
     disableStepperMotor();
     debugPrint("Safe mode rotation complete");
-}
-
-// Alternative version that more closely matches your original timing
-void performSafeModeRotationWithDelay(int totalSteps, unsigned long delayMicros) {
-    debugPrint("Starting safe mode rotation with custom delay");
-
-    // Enable the stepper motor
-    enableStepperMotor();
-
-    const int FORWARD_STEPS = 200 * 16; // 3200 steps forward
-    const int BACKWARD_STEPS = 200 * 4; // 800 steps backward
-    const int NET_STEPS_PER_CYCLE = FORWARD_STEPS - BACKWARD_STEPS; // 2400 net steps
-
-    // Calculate speed based on your delay
-    // Speed in steps per second = 1,000,000 / (2 * delayMicros)
-    float stepsPerSecond = 1000000.0 / (2.0 * delayMicros);
-    stepper.setMaxSpeed(stepsPerSecond);
-    stepper.setAcceleration(stepsPerSecond / 2); // Gentle acceleration
-
-    int currentSteps = 0;
-
-    while (currentSteps < totalSteps) {
-        // Move forward
-        stepper.move(FORWARD_STEPS);
-        while (stepper.distanceToGo() != 0) {
-            stepper.run();
-        }
-
-        // Move backward
-        stepper.move(-BACKWARD_STEPS);
-        while (stepper.distanceToGo() != 0) {
-            stepper.run();
-        }
-
-        currentSteps += NET_STEPS_PER_CYCLE;
-    }
-
-    // Correct overshoot if any
-    if (currentSteps > totalSteps) {
-        int overshoot = currentSteps - totalSteps;
-        stepper.move(-overshoot);
-        while (stepper.distanceToGo() != 0) {
-            stepper.run();
-        }
-    }
-
-    disableStepperMotor();
-    debugPrint("Safe mode rotation with delay complete");
 }
 
 void enableStepperMotor() {
@@ -300,7 +242,7 @@ void checkStepperButton() {
     }
 
     // Check if debounce delay has passed since the last button state change
-    if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (millis() - lastDebounceTime > debounceDelay) {
         // If the button state has changed
         if (reading != stepperButtonPressed) {
             stepperButtonPressed = reading;
@@ -317,10 +259,6 @@ void checkStepperButton() {
             }
         }
     }
-
-    // if (buttonControlActive) {
-    //     performSafeModeRotation(0, true);
-    // }
 
     // Save the current button state for next comparison
     lastStepperButtonState = reading;

@@ -43,8 +43,6 @@ extern const unsigned long TIME_CHECK_INTERVAL;
 extern AccelStepper stepper;
 
 // WiFi and time configuration
-extern const char* ssid;
-extern const char* password;
 extern const char* ntpServer;
 extern const long gmtOffset_sec;
 extern const int daylightOffset_sec;
@@ -76,6 +74,5 @@ void checkStepperButton();
 void enableStepperMotor();
 void disableStepperMotor();
 void performSafeModeRotation(int totalSteps, boolean allowInterrupt);
-void performSafeModeRotationWithDelay(int totalSteps, unsigned long delayMicros);
 
 #endif //STEPPER_CONTROL_H

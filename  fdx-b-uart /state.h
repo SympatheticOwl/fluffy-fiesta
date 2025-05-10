@@ -21,6 +21,8 @@
 #define STEPPER_ENB 7        // ENB pin for L298N driver
 #define STEPPER_BUTTON_PIN 2 // Stepper Button connected to D2
 
+//TODO try and recentralize state and pins
+
 // Function declarations
 void debugPrint(const char* message);
 void debugPrintHex(const char* prefix, byte value);

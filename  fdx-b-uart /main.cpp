@@ -1,5 +1,5 @@
-#include <ESP32Servo.h>      // Include ESP32Servo library instead of Servo.h
-#include <AccelStepper.h>    // Include the AccelStepper library
+#include <ESP32Servo.h>
+#include <AccelStepper.h>
 #include <WiFi.h>
 #include "state.h"
 #include "stepper_control.h"
@@ -7,13 +7,11 @@
 #include "web_server.h"
 
 // WiFi configuration
-const char *webServerSSID = ""; // Using the same SSID from your code
-const char *webServerPassword = ""; // Using the same password from your code
+const char *webServerSSID = "";
+const char *webServerPassword = "";
 
-// Create the web server instance
 TaskSchedulerWebServer taskServer(webServerSSID, webServerPassword);
 
-// Add this function before setup()
 void setupWebServer() {
     // Initialize the web server
     if (taskServer.begin()) {
@@ -30,7 +28,7 @@ void setup() {
     Serial1.begin(9600); // Use UART1 for debug output
 
     // Redefine Serial to use Serial1 for all debug output
-#define Serial Serial1
+    #define Serial Serial1
 
     // Initialize RFID reader
     setupRFID();
@@ -39,28 +37,28 @@ void setup() {
     pinMode(STEPPER_BUTTON_PIN, INPUT_PULLUP); // Button with pull-up
     pinMode(STEPPER_ENA, OUTPUT);
     pinMode(STEPPER_ENB, OUTPUT);
-    digitalWrite(STEPPER_ENA, LOW); // Start with motor disabled
-    digitalWrite(STEPPER_ENB, LOW); // Start with motor disabled
+    digitalWrite(STEPPER_ENA, LOW);
+    digitalWrite(STEPPER_ENB, LOW);
 
     // Configure stepper motor
-    stepper.setMaxSpeed(500); // Maximum speed in steps per second
-    stepper.setAcceleration(200); // Acceleration in steps per second per second
-    stepper.setSpeed(200); // Initial speed in steps per second
+    stepper.setMaxSpeed(500);
+    stepper.setAcceleration(200);
+    stepper.setSpeed(200);
 
     // Test stepper motor (small movement)
     debugPrint("Testing stepper motor...");
-    enableStepperMotor(); // Enable motor for testing
-    stepper.move(20); // Move 20 steps
+    enableStepperMotor();
+    stepper.move(20);
     while (stepper.distanceToGo() != 0) {
         stepper.run();
     }
     delay(500);
-    stepper.move(-20); // Move back 20 steps
+    stepper.move(-20);
     while (stepper.distanceToGo() != 0) {
         stepper.run();
     }
     delay(500);
-    disableStepperMotor(); // Disable motor after testing
+    disableStepperMotor();
 
     // Initialize WiFi and time
     debugPrint("Connecting to WiFi...");
@@ -96,7 +94,7 @@ void setup() {
         debugPrint("WiFi connection failed! Time functions will not work correctly.");
     }
 
-    // Initialize the web server (uses the same WiFi credentials or creates an AP if needed)
+    // Initialize the web server
     taskServer.begin();
 
     debugPrint("Setup complete");
@@ -164,7 +162,9 @@ void loop() {
     if (buttonControlActive) {
         // If button is controlling the stepper, keep it running
         performSafeModeRotation(0, true);
-    } /*else if (stepperRotating) {
+    }
+    //TODO: might have broken "every minute" task reset
+    /*else if (stepperRotating) {
     // Continue running the stepper if a scheduled rotation is in progress
     if (stepper.distanceToGo() != 0) {
       stepper.run();
@@ -187,6 +187,5 @@ void loop() {
         checkScheduledTasks();
     }
 
-    // Give a little time for other processes
     delay(1000);
 }

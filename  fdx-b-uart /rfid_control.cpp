@@ -24,13 +24,13 @@ Servo myServo;
 boolean tagPresent = false;
 unsigned long tagLastSeen = 0;
 const int TAG_TIMEOUT = 5000; // Time in ms to wait before considering tag removed
-const int SERVO_CLOSED_POS = 0; // Position for servo when tag detected (0-180)
-const int SERVO_OPEN_POS = 90; // Position for servo when no tag detected (0-180)
+const int SERVO_CLOSED_POS = 0; // Position for servo when tag detected (0-90)
+const int SERVO_OPEN_POS = 90; // Position for servo when no tag detected (0-90)
 
 int currentPosition = SERVO_OPEN_POS;
 
 void smoothServoMove(int targetPosition, int fullRangeTime) {
-    // fullRangeTime is the time in ms it would take to move through the entire 0-180 range
+    // fullRangeTime is the time in ms it would take to move through the entire 0-90 range
 
     // Calculate distance and proportion of full range
     int distance = abs(targetPosition - currentPosition);

@@ -25,6 +25,7 @@ bool TaskSchedulerWebServer::loadTasks() {
     }
 
     // Get the JSON string
+    // TODO: don't use JSON, it's easy but wasteful
     String tasksJson = preferences.getString("tasks", "[]");
     Serial.println("Loaded tasks from persistent storage:");
     Serial.println(tasksJson);
